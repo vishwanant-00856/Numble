@@ -51,10 +51,9 @@ HTML_TEMPLATE = """
         .correct { background-color: #6aaa64 !important; }
         .present { background-color: #c9b458 !important; }
         .absent { background-color: #787c7e !important; }
-        input { font-size: 20px; padding: 10px; width: 200px; margin-top: 20px; }
         button { padding: 10px 20px; font-size: 16px; background-color: #538d4e; color: white; border: none; cursor: pointer; margin: 5px; }
         #keyboard { margin-top: 20px; }
-        .key { display: inline-block; margin: 2px; padding: 10px 15px; background-color: #d3d6da; color: black; font-weight: bold; border-radius: 4px; min-width: 32px; }
+        .key { display: inline-block; margin: 2px; padding: 10px 15px; background-color: #d3d6da; color: black; font-weight: bold; border-radius: 4px; min-width: 32px; cursor: pointer; }
         .key.correct { background-color: #6aaa64; color: white; }
         .key.present { background-color: #c9b458; color: white; }
         .key.absent { background-color: #787c7e; color: white; }
@@ -63,9 +62,6 @@ HTML_TEMPLATE = """
 <body>
     <h1>Numble</h1>
     <div id=\"board\"></div>
-    <input type=\"text\" id=\"guess\" maxlength=\"5\" placeholder=\"Enter 5-digit prime\">
-    <br>
-    <button onclick=\"submitGuess()\">Enter</button>
     <button onclick=\"getHint()\">Hint</button>
     <p id=\"message\"></p>
     <div id=\"keyboard\"></div>
@@ -75,6 +71,7 @@ HTML_TEMPLATE = """
         const maxAttempts = {{ max_attempts }};
         const board = document.getElementById('board');
         const keyboard = {};
+        let currentGuess = "";
 
         for (let r = 0; r < maxAttempts; r++) {
             const row = document.createElement('div');
@@ -93,16 +90,46 @@ HTML_TEMPLATE = """
             const k = document.createElement('div');
             k.innerText = ch;
             k.className = 'key';
+            k.onclick = () => handleKey(ch);
             keyboard[ch] = k;
             keyContainer.appendChild(k);
         }
 
+        const enterKey = document.createElement('div');
+        enterKey.innerText = 'Enter';
+        enterKey.className = 'key';
+        enterKey.onclick = () => submitGuess();
+        keyContainer.appendChild(enterKey);
+
+        const backspaceKey = document.createElement('div');
+        backspaceKey.innerText = '<';
+        backspaceKey.className = 'key';
+        backspaceKey.onclick = () => handleBackspace();
+        keyContainer.appendChild(backspaceKey);
+
+        function handleKey(ch) {
+            if (currentGuess.length < 5) {
+                currentGuess += ch;
+                const row = board.children[attempts];
+                row.children[currentGuess.length - 1].innerText = ch;
+            }
+        }
+
+        function handleBackspace() {
+            if (currentGuess.length > 0) {
+                const row = board.children[attempts];
+                row.children[currentGuess.length - 1].innerText = "";
+                currentGuess = currentGuess.slice(0, -1);
+            }
+        }
+
         function submitGuess() {
-            const guess = document.getElementById('guess').value;
+            if (currentGuess.length !== 5) return;
+
             fetch('/guess', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guess })
+                body: JSON.stringify({ guess: currentGuess })
             })
             .then(res => res.json())
             .then(data => {
@@ -123,7 +150,7 @@ HTML_TEMPLATE = """
                     }
                 }
                 document.getElementById('message').innerText = data.message;
-                document.getElementById('guess').value = '';
+                currentGuess = "";
                 attempts++;
             });
         }

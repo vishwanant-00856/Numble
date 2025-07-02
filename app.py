@@ -18,10 +18,8 @@ PRIMES_FILE = "five_digit_primes.json"
 
 hint_cooldown = 1  # Allow 1 hint per game session
 
-
 def generate_five_digit_primes():
     return [str(num) for num in range(10000, 100000) if isprime(num)]
-
 
 def load_five_digit_primes():
     if os.path.exists(PRIMES_FILE):
@@ -32,7 +30,6 @@ def load_five_digit_primes():
         with open(PRIMES_FILE, "w") as f:
             json.dump(primes, f)
         return primes
-
 
 FIVE_DIGIT_PRIMES = load_five_digit_primes()
 
@@ -106,6 +103,12 @@ HTML_TEMPLATE = """
         backspaceKey.className = 'key';
         backspaceKey.onclick = () => handleBackspace();
         keyContainer.appendChild(backspaceKey);
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key >= '0' && event.key <= '9') handleKey(event.key);
+            if (event.key === 'Backspace') handleBackspace();
+            if (event.key === 'Enter') submitGuess();
+        });
 
         function handleKey(ch) {
             if (currentGuess.length < 5) {

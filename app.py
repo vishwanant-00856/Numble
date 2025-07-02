@@ -38,45 +38,63 @@ FIVE_DIGIT_PRIMES = load_five_digit_primes()
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
-<html lang="en">
+<html lang=\"en\">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
     <title>Numble</title>
     <style>
         body { background: #121213; color: white; font-family: Arial, sans-serif; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(5, 60px); gap: 10px; justify-content: center; margin-top: 40px; }
-        .cell { width: 60px; height: 60px; font-size: 36px; font-weight: bold; background: #3a3a3c; color: white; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
-        .correct { background: #6aaa64; }
-        .present { background: #c9b458; }
-        .absent { background: #787c7e; }
+        #board { display: grid; grid-template-rows: repeat(10, 1fr); gap: 10px; justify-content: center; margin: 40px auto; width: max-content; }
+        .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .cell { width: 60px; height: 60px; font-size: 32px; font-weight: bold; background: #3a3a3c; color: white; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+        .correct { background-color: #6aaa64 !important; }
+        .present { background-color: #c9b458 !important; }
+        .absent { background-color: #787c7e !important; }
         input { font-size: 20px; padding: 10px; width: 200px; margin-top: 20px; }
-        button { padding: 10px 20px; font-size: 16px; background-color: #538d4e; color: white; border: none; cursor: pointer; }
+        button { padding: 10px 20px; font-size: 16px; background-color: #538d4e; color: white; border: none; cursor: pointer; margin: 5px; }
+        #keyboard { margin-top: 20px; }
+        .key { display: inline-block; margin: 2px; padding: 10px 15px; background-color: #d3d6da; color: black; font-weight: bold; border-radius: 4px; min-width: 32px; }
+        .key.correct { background-color: #6aaa64; color: white; }
+        .key.present { background-color: #c9b458; color: white; }
+        .key.absent { background-color: #787c7e; color: white; }
     </style>
 </head>
 <body>
     <h1>Numble</h1>
-    <div id="grid"></div>
-    <input type="text" id="guess" maxlength="5" placeholder="Enter 5-digit prime">
-    <button onclick="submitGuess()">Guess</button>
-    <button onclick="getHint()">Hint</button>
-    <p id="message"></p>
+    <div id=\"board\"></div>
+    <input type=\"text\" id=\"guess\" maxlength=\"5\" placeholder=\"Enter 5-digit prime\">
+    <br>
+    <button onclick=\"submitGuess()\">Enter</button>
+    <button onclick=\"getHint()\">Hint</button>
+    <p id=\"message\"></p>
+    <div id=\"keyboard\"></div>
 
     <script>
         let attempts = 0;
         const maxAttempts = {{ max_attempts }};
+        const board = document.getElementById('board');
+        const keyboard = {};
 
-        function createRow(guess, feedback) {
-            const grid = document.getElementById('grid');
+        for (let r = 0; r < maxAttempts; r++) {
             const row = document.createElement('div');
-            row.className = 'grid';
-            for (let i = 0; i < guess.length; i++) {
+            row.className = 'row';
+            for (let c = 0; c < 5; c++) {
                 const cell = document.createElement('div');
-                cell.className = 'cell ' + feedback[i];
-                cell.innerText = guess[i];
+                cell.className = 'cell';
                 row.appendChild(cell);
             }
-            grid.appendChild(row);
+            board.appendChild(row);
+        }
+
+        const keyDigits = '0123456789';
+        const keyContainer = document.getElementById('keyboard');
+        for (let ch of keyDigits) {
+            const k = document.createElement('div');
+            k.innerText = ch;
+            k.className = 'key';
+            keyboard[ch] = k;
+            keyContainer.appendChild(k);
         }
 
         function submitGuess() {
@@ -92,9 +110,21 @@ HTML_TEMPLATE = """
                     document.getElementById('message').innerText = data.error;
                     return;
                 }
-                createRow(data.guess, data.feedback);
+                const row = board.children[attempts];
+                for (let i = 0; i < data.guess.length; i++) {
+                    const cell = row.children[i];
+                    cell.innerText = data.guess[i];
+                    cell.classList.add(data.feedback[i]);
+
+                    const key = keyboard[data.guess[i]];
+                    if (key) {
+                        key.classList.remove('correct', 'present', 'absent');
+                        key.classList.add(data.feedback[i]);
+                    }
+                }
                 document.getElementById('message').innerText = data.message;
                 document.getElementById('guess').value = '';
+                attempts++;
             });
         }
 
